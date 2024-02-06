@@ -12,8 +12,15 @@ pub enum MediaType {
 #[derive(Debug, PartialEq, Serialize, Deserialize, EnumIter, Clone, Copy, Display)]
 pub enum Status {
     OnGoing,
-    Finished,
+    Completed,
     Upcoming,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, EnumIter, Clone, Copy, Display)]
+pub enum State {
+    Planned,
+    Active,
+    Finished,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
@@ -23,6 +30,7 @@ pub struct Media {
     pub media_type: MediaType,
     pub release_date: NaiveDate,
     pub status: Status,
+    pub state: State,
     pub broadcast_day: Option<Weekday>,
     pub broadcast_time: Option<NaiveTime>,
     pub current: Option<u32>,
@@ -36,8 +44,10 @@ impl Default for Media {
             title: String::new(),
             alt_titles: Vec::new(),
             media_type: MediaType::Anime,
-            release_date: NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
-            status: Status::Finished,
+            release_date: NaiveDate::default(),
+            // release_date:  NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
+            status: Status::Completed,
+            state: State::Planned,
             broadcast_day: None,
             broadcast_time: None,
             current: None,
