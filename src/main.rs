@@ -150,6 +150,11 @@ impl App {
             });
 
             ui.horizontal(|ui| {
+                ui.label("Current:");
+                ui.add(egui::DragValue::new(&mut self.tmp_media.current).speed(1.0));
+            });
+
+            ui.horizontal(|ui| {
                 if ui.button("add").clicked() {
                     self.media.push(self.tmp_media.clone());
                     self.save_media().unwrap();
@@ -310,6 +315,12 @@ impl eframe::App for App {
                                 }
                             });
 
+                        // current episode with change
+                        frame.content_ui.horizontal(|ui| {
+                            ui.label("Current:");
+                            ui.add(egui::DragValue::new(&mut media.current).speed(1.0));
+                        });
+
                         let available_width = frame.content_ui.available_width();
                         frame
                             .content_ui
@@ -320,10 +331,6 @@ impl eframe::App for App {
 
             if should_save {
                 self.save_media().unwrap();
-            }
-
-            if ui.button("debug").clicked() {
-                dbg!(&self.media);
             }
 
             self.window_add_media(ctx);
