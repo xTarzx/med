@@ -33,7 +33,7 @@ pub struct Media {
     pub state: State,
     pub broadcast_day: Option<Weekday>,
     pub broadcast_time: Option<NaiveTime>,
-    pub current: Option<u32>,
+    pub current: u32,
     pub total: Option<u32>,
     pub total_out: Option<u32>,
 }
@@ -50,7 +50,7 @@ impl Default for Media {
             state: State::Planned,
             broadcast_day: None,
             broadcast_time: None,
-            current: None,
+            current: 0,
             total: None,
             total_out: None,
         }
