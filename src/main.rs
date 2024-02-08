@@ -23,7 +23,6 @@ struct App {
     tmp_media: Media,
 
     query: String,
-    search_results: Vec<Media>,
     filter: Filter,
 }
 
@@ -55,10 +54,9 @@ impl App {
         }
     }
 
-    fn search_media(&mut self) {
-        self.search_results = self
-            .media
-            .iter()
+    fn search_media(&mut self) -> Vec<&mut Media> {
+        self.media
+            .iter_mut()
             .filter(|media| {
                 if !self.query.is_empty() {
                     if !media.title.contains(&self.query) {
@@ -86,8 +84,7 @@ impl App {
 
                 true
             })
-            .cloned()
-            .collect();
+            .collect()
     }
 
     fn window_add_media(&mut self, ctx: &egui::Context) {
@@ -156,7 +153,6 @@ impl App {
                 if ui.button("add").clicked() {
                     self.media.push(self.tmp_media.clone());
                     self.save_media().unwrap();
-                    self.search_media();
                 }
 
                 if ui.button("reset").clicked() {
@@ -172,13 +168,7 @@ impl App {
             // let text_edit = egui::TextEdit::singleline(&mut self.query);
             // ui.add_sized(ui.available_size(), text_edit);
 
-            if ui.text_edit_singleline(&mut self.query).lost_focus() {
-                self.search_media();
-            };
-
-            if ui.button("search").clicked() {
-                self.search_media();
-            }
+            ui.text_edit_singleline(&mut self.query);
         });
 
         // add a bit of space
@@ -256,7 +246,6 @@ impl Default for App {
             tmp_media: Media::default(),
 
             query: String::new(),
-            search_results: Vec::new(),
             filter: Filter::default(),
         };
 
@@ -273,12 +262,9 @@ impl eframe::App for App {
 
             ui.separator();
 
-            let media_list = if !self.search_results.is_empty() {
-                &mut self.search_results
-            } else {
-                &mut self.media
-            };
+            let mut media_list = self.search_media();
             let font_size = 25.0;
+            let mut should_save = false;
 
             egui::ScrollArea::vertical()
                 // .auto_shrink(egui::Vec2b::new(true, true))
@@ -307,30 +293,38 @@ impl eframe::App for App {
                                 .size(font_size * 0.4),
                         );
 
-                        // edit state and save on change
-                        let combo_state = ComboBox::new(format!("media_state_{}", idx), "")
+                        ComboBox::new(format!("media_state_{}", idx), "")
                             .selected_text(format!("{}", media.state))
                             .show_ui(&mut frame.content_ui, |ui| {
                                 for state in med::State::iter() {
-                                    ui.selectable_value(
-                                        &mut media.state,
-                                        state,
-                                        format!("{}", state),
-                                    );
+                                    if ui
+                                        .selectable_value(
+                                            &mut media.state,
+                                            state,
+                                            format!("{}", state),
+                                        )
+                                        .clicked()
+                                    {
+                                        should_save = true;
+                                    };
                                 }
                             });
 
-                        if combo_state.response.changed() {
-                            self.save_media().unwrap();
-                        }
-
-                        // let available_width = frame.content_ui.available_width();
-                        // frame
-                        //     .content_ui
-                        //     .allocate_space(egui::Vec2::new(available_width * 1.0, 0.0));
+                        let available_width = frame.content_ui.available_width();
+                        frame
+                            .content_ui
+                            .allocate_space(egui::Vec2::new(available_width * 1.0, 0.0));
                         frame.end(ui);
                     }
                 });
+
+            if should_save {
+                self.save_media().unwrap();
+            }
+
+            if ui.button("debug").clicked() {
+                dbg!(&self.media);
+            }
 
             self.window_add_media(ctx);
         });
