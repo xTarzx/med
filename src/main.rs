@@ -100,7 +100,7 @@ impl App {
             ui.horizontal(|ui| {
                 ui.label("Type:");
 
-                ComboBox::new("media_type", "")
+                ComboBox::new("add_media_type", "")
                     .selected_text(format!("{}", self.tmp_media.media_type))
                     .show_ui(ui, |ui| {
                         for media_type in MediaType::iter() {
@@ -123,7 +123,7 @@ impl App {
             ui.horizontal(|ui| {
                 ui.label("Status:");
 
-                ComboBox::new("media_status", "")
+                ComboBox::new("add_media_status", "")
                     .selected_text(format!("{}", self.tmp_media.status))
                     .show_ui(ui, |ui| {
                         for status in med::Status::iter() {
@@ -139,7 +139,7 @@ impl App {
             ui.horizontal(|ui| {
                 ui.label("State:");
 
-                ComboBox::new("media_state", "")
+                ComboBox::new("add_media_state", "")
                     .selected_text(format!("{}", self.tmp_media.state))
                     .show_ui(ui, |ui| {
                         for state in med::State::iter() {
@@ -176,11 +176,20 @@ impl App {
                 self.search_media();
             };
 
+            if ui.button("search").clicked() {
+                self.search_media();
+            }
+        });
+
+        // add a bit of space
+        ui.add_space(2.0);
+
+        ui.horizontal(|ui| {
             let selected_text = match self.filter.media_type {
                 Some(media_type) => format!("{}", media_type),
                 None => "Type".to_string(),
             };
-            ComboBox::new("media_type", "")
+            ComboBox::new("filter_media_type", "")
                 .selected_text(selected_text)
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter.media_type, None, "None");
@@ -198,7 +207,7 @@ impl App {
                 Some(status) => format!("{}", status),
                 None => "Status".to_string(),
             };
-            ComboBox::new("media_status", "")
+            ComboBox::new("filter_media_status", "")
                 .selected_text(selected_text)
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter.status, None, "None");
@@ -216,7 +225,7 @@ impl App {
                 Some(state) => format!("{}", state),
                 None => "State".to_string(),
             };
-            ComboBox::new("media_state", "")
+            ComboBox::new("filter_media_state", "")
                 .selected_text(format!("{}", selected_text))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter.state, None, "None");
@@ -229,10 +238,6 @@ impl App {
                         );
                     }
                 });
-
-            if ui.button("search").clicked() {
-                self.search_media();
-            }
         });
     }
 }
@@ -269,18 +274,18 @@ impl eframe::App for App {
             ui.separator();
 
             let media_list = if !self.search_results.is_empty() {
-                &self.search_results
+                &mut self.search_results
             } else {
-                &self.media
+                &mut self.media
             };
             let font_size = 25.0;
 
             egui::ScrollArea::vertical()
-                .auto_shrink(egui::Vec2b::new(false, true))
+                // .auto_shrink(egui::Vec2b::new(true, true))
                 .show(ui, |ui| {
                     ui.spacing_mut().item_spacing = egui::Vec2::new(0.0, 10.0);
 
-                    for media in media_list {
+                    for (idx, media) in media_list.iter_mut().enumerate() {
                         let mut frame = egui::Frame::default()
                             .rounding(6.0)
                             .inner_margin(egui::Vec2::new(10.0, 10.0))
@@ -302,45 +307,30 @@ impl eframe::App for App {
                                 .size(font_size * 0.4),
                         );
 
-                        let available_width = frame.content_ui.available_width();
-                        frame
-                            .content_ui
-                            .allocate_space(egui::Vec2::new(available_width * 0.5, 0.0));
+                        // edit state and save on change
+                        let combo_state = ComboBox::new(format!("media_state_{}", idx), "")
+                            .selected_text(format!("{}", media.state))
+                            .show_ui(&mut frame.content_ui, |ui| {
+                                for state in med::State::iter() {
+                                    ui.selectable_value(
+                                        &mut media.state,
+                                        state,
+                                        format!("{}", state),
+                                    );
+                                }
+                            });
+
+                        if combo_state.response.changed() {
+                            self.save_media().unwrap();
+                        }
+
+                        // let available_width = frame.content_ui.available_width();
+                        // frame
+                        //     .content_ui
+                        //     .allocate_space(egui::Vec2::new(available_width * 1.0, 0.0));
                         frame.end(ui);
                     }
                 });
-
-            // for media in media_list {
-            //     let mut frame = egui::Frame::default()
-            //         .rounding(6.0)
-            //         .inner_margin(egui::Vec2::new(10.0, 10.0))
-            //         .fill(egui::Color32::from_hex("#262626").unwrap())
-            //         .begin(ui);
-
-            //     frame
-            //         .content_ui
-            //         .label(egui::RichText::new(format!("{}", media.media_type)));
-
-            //     frame.content_ui.label(
-            //         egui::RichText::new(format!("{}", media.title))
-            //             .size(font_size)
-            //             .color(egui::Color32::WHITE),
-            //     );
-
-            //     frame.content_ui.label(
-            //         egui::RichText::new(format!("Status: {}", media.status)).size(font_size * 0.4),
-            //     );
-
-            //     frame.end(ui);
-
-            // ui.horizontal(|ui| {
-            //     ui.label(format!("{}", media.title));
-            //     ui.label(format!("{}", media.media_type));
-            //     ui.label(format!("{}", media.release_date));
-            //     ui.label(format!("{}", media.status));
-            //     ui.label(format!("{}", media.state));
-            // });
-            // }
 
             self.window_add_media(ctx);
         });
